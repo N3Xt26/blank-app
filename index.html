@@ -45,7 +45,7 @@
       }
 
       #app-label {
-        font-size: 1rem;
+        font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 2.5px;
         text-transform: uppercase;
@@ -88,16 +88,13 @@
         justify-content: center;
         box-shadow: var(--soft-shadow);
         border: 1px solid rgba(224, 124, 106, 0.1);
-        /* Importante per l'effetto ottico della bottiglia che gira */
         overflow: hidden;
       }
 
       #bottle-img {
-        /* Dimensione leggermente ridotta per permettere la rotazione senza tagliare angoli */
         width: 65%;
         height: auto;
         object-fit: contain;
-        /* Rimuoviamo la transition CSS perché useremo JS per la fisica */
         will-change: transform;
         filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.15));
       }
@@ -106,10 +103,10 @@
       .action-section {
         flex: 1;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         padding-bottom: env(safe-area-inset-bottom, 30px);
-        flex-direction: column;
         gap: 15px;
       }
 
@@ -134,14 +131,31 @@
         background: var(--accent);
         color: white;
         box-shadow: 0 8px 20px rgba(224, 124, 106, 0.3);
-        display: block; /* Visibile all'inizio */
+        display: block;
       }
 
       #main-action-btn:active {
         transform: scale(0.95);
       }
 
-      /* Loading Spinner integrato nel bottone */
+      #retry-btn {
+        background: transparent;
+        color: var(--text-dim);
+        font-size: 0.8rem;
+        text-decoration: underline;
+        border: none;
+        cursor: pointer;
+        padding: 10px;
+        display: none;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      #retry-btn:hover {
+        opacity: 1;
+      }
+
+      /* Loading Spinner */
       .spinner {
         display: inline-block;
         width: 12px;
@@ -160,7 +174,7 @@
         }
       }
 
-      /* Dialog Box per Errori */
+      /* Dialog Box */
       #error-box {
         position: fixed;
         top: 50%;
@@ -225,36 +239,37 @@
         <span class="spinner" id="btn-spinner"></span>
         <span id="btn-text">CERCA DA BERE</span>
       </a>
+      <button id="retry-btn">Non mi piace, cercane un altro</button>
     </div>
 
     <script>
       // --- VARIABILI DI STATO ---
-      let appState = "IDLE"; // IDLE, SEARCHING, TRACKING
+      let appState = "IDLE";
       let userCoords = null;
-      let targetBearing = null; // Dove vogliamo andare (Nord geografico)
-      let deviceHeading = 0; // Dove sta guardando il telefono
+      let targetBearing = null;
+      let deviceHeading = 0;
       let retryCount = 0;
       const maxRetries = 3;
 
       // --- VARIABILI FISICA ---
-      let angle = 0; // Angolo attuale della bottiglia
-      let velocity = 0; // Velocità di rotazione
-      const SPIN_SPEED = -10; // Velocità durante la ricerca (negativo = antiorario)
-      const FRICTION = 0.96; // Quanto frena (più basso = frena prima)
-      const SPRING = 0.025; // Forza "magnetica" verso il target (più alto = scatta più veloce)
+      let angle = 0;
+      let velocity = 0;
+      const SPIN_SPEED = -25;
+      const FRICTION = 0.94;
+      const SPRING = 0.04;
 
       // --- DOM ELEMENTS ---
       const bottleImg = document.getElementById("bottle-img");
       const statusText = document.getElementById("status");
       const targetText = document.getElementById("target-name");
       const mainBtn = document.getElementById("main-action-btn");
+      const retryBtn = document.getElementById("retry-btn");
       const btnText = document.getElementById("btn-text");
       const btnSpinner = document.getElementById("btn-spinner");
       const errorBox = document.getElementById("error-box");
       const overlay = document.getElementById("overlay");
 
       // --- INITIALIZATION ---
-      // Avviamo il loop fisico subito
       requestAnimationFrame(physicsLoop);
 
       mainBtn.addEventListener("click", (e) => {
@@ -262,18 +277,36 @@
           e.preventDefault();
           startExperience();
         }
-        // Se è TRACKING, il bottone è un link <a> normale verso maps, quindi non preveniamo il default
+      });
+
+      retryBtn.addEventListener("click", () => {
+        setSearchingUI();
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              userCoords = {
+                lat: pos.coords.latitude,
+                lon: pos.coords.longitude,
+              };
+              trySearch();
+            },
+            () => {
+              trySearch();
+            },
+          );
+        } else {
+          trySearch();
+        }
       });
 
       // --- CORE LOGIC ---
 
       async function startExperience() {
-        // 1. Richiedi permessi Sensori (iOS richiede click utente)
         if (typeof DeviceOrientationEvent.requestPermission === "function") {
           try {
             const permission = await DeviceOrientationEvent.requestPermission();
             if (permission !== "granted") {
-              alert("Senza bussola non posso indicarti la direzione!");
+              alert("Serve la bussola!");
               return;
             }
           } catch (e) {
@@ -281,16 +314,13 @@
           }
         }
 
-        // Avvia listener bussola
         window.addEventListener("deviceorientation", handleOrientation, true);
 
-        // 2. Richiedi permessi GPS
         if (!navigator.geolocation) {
           showError("Il tuo browser non supporta il GPS.");
           return;
         }
 
-        // Cambia stato UI
         setSearchingUI();
 
         navigator.geolocation.getCurrentPosition(
@@ -311,15 +341,19 @@
 
       function setSearchingUI() {
         appState = "SEARCHING";
-        // Inizia a girare veloce (imposto la velocità iniziale)
         velocity = SPIN_SPEED;
 
         targetText.innerText = "Analizzo la zona...";
-        statusText.innerText = "La bottiglia sta cercando...";
+        statusText.innerText = "La bottiglia sta decidendo...";
         btnText.innerText = "RICERCA IN CORSO...";
         btnSpinner.style.display = "inline-block";
+
         mainBtn.style.opacity = "0.7";
-        mainBtn.style.pointerEvents = "none"; // Disabilita click
+        mainBtn.style.pointerEvents = "none";
+        mainBtn.style.backgroundColor = "var(--accent)";
+        mainBtn.href = "#";
+
+        retryBtn.style.display = "none";
       }
 
       async function trySearch() {
@@ -336,85 +370,94 @@
 
           if (data.elements && data.elements.length > 0) {
             const closest = getClosest(lat, lon, data.elements);
-            setupTarget(closest);
+            // Passiamo il controllo alla funzione asincrona per il setup
+            await setupTarget(closest);
           } else {
             throw new Error("Nessun risultato");
           }
         } catch (err) {
+          console.error(err);
           if (retryCount < maxRetries) {
             retryCount++;
-            statusText.innerText = `Approfondisco la ricerca... (${retryCount})`;
+            statusText.innerText = `Approfondisco... (${retryCount})`;
             setTimeout(trySearch, 2000);
           } else {
             appState = "IDLE";
-            showError("Nessun locale trovato o errore di connessione.");
+            showError("Nessun locale trovato o errore.");
           }
         }
       }
 
-      function setupTarget(place) {
+      // NUOVA FUNZIONE PER DISTANZA STRADALE
+      async function getWalkingDistance(fromLat, fromLon, toLat, toLon) {
+        try {
+          // Usa OSRM public API (gratuita)
+          const url = `https://router.project-osrm.org/route/v1/walking/${fromLon},${fromLat};${toLon},${toLat}?overview=false`;
+          const response = await fetch(url);
+          const data = await response.json();
+          if (data.routes && data.routes.length > 0) {
+            return data.routes[0].distance; // Ritorna metri
+          }
+        } catch (e) {
+          console.warn("Errore routing OSRM:", e);
+        }
+        return null; // Fallback se fallisce
+      }
+
+      // FUNZIONE SETUP MODIFICATA (ASYNC)
+      async function setupTarget(place) {
         const tLat = place.lat || place.center.lat;
         const tLon = place.lon || place.center.lon;
 
-        // Calcola il bearing geografico (angolo fisso rispetto al Nord)
         targetBearing = calcBearing(userCoords.lat, userCoords.lon, tLat, tLon);
 
-        // CAMBIO STATO -> TRACKING
-        // Qui la magia: smettiamo di forzare lo spin, la fisica farà il resto
+        // Calcolo distanza reale
+        statusText.innerText = "Calcolo percorso a piedi...";
+        let realDistance = await getWalkingDistance(
+          userCoords.lat,
+          userCoords.lon,
+          tLat,
+          tLon,
+        );
+
+        // Se OSRM fallisce, usa la distanza in linea d'aria (place.distance)
+        if (!realDistance) realDistance = place.distance;
+
         appState = "TRACKING";
 
-        // Aggiorna UI
         const name = place.tags.name || getCategoryName(place);
         targetText.innerText = name;
-        statusText.innerText = `${Math.round(place.distance)}m di distanza`;
+        statusText.innerText = `${Math.round(realDistance)}m a piedi`;
 
-        // Aggiorna il bottone
         btnSpinner.style.display = "none";
         mainBtn.style.opacity = "1";
         mainBtn.style.pointerEvents = "auto";
-        mainBtn.style.backgroundColor = "#82A350"; // Verde successo
+        mainBtn.style.backgroundColor = "#27ae60";
         btnText.innerText = `RAGGIUNGI ${getCategoryName(place).toUpperCase()}`;
-
-        // Imposta link Google Maps
         mainBtn.href = `https://www.google.com/maps/dir/?api=1&destination=${tLat},${tLon}&travelmode=walking`;
         mainBtn.target = "_blank";
+
+        retryBtn.style.display = "block";
       }
 
       // --- PHYSICS ENGINE ---
       function physicsLoop() {
         if (appState === "SEARCHING") {
-          // Durante la ricerca, applichiamo una forza costante per girare
-          // Usiamo un lerp dolce per arrivare alla velocità di crociera se partiamo da fermi
           velocity = velocity * 0.95 + SPIN_SPEED * 0.05;
         } else if (appState === "TRACKING" && targetBearing !== null) {
-          // Calcola l'angolo target RELATIVO allo schermo
-          // targetBearing = Angolo tra Nord Geo e Target
-          // deviceHeading = Angolo tra Nord Geo e Alto del Telefono
-          // desiredAngle = Dove deve puntare la bottiglia sullo schermo (0 = alto)
           let desiredAngle = targetBearing - deviceHeading;
-
-          // Trova la differenza più breve tra angolo attuale e desiderato
           let diff = desiredAngle - angle;
 
-          // Normalizza tra -180 e 180 per trovare la via più breve
           while (diff < -180) diff += 360;
           while (diff > 180) diff -= 360;
 
-          // APPLICAZIONE FORZE
-          // 1. Forza Molla: Più siamo lontani, più tiriamo
           const acceleration = diff * SPRING;
-
-          // 2. Applica accelerazione alla velocità
           velocity += acceleration;
-
-          // 3. Applica frizione (smorzamento) per evitare che oscilli all'infinito
           velocity *= FRICTION;
         } else {
-          // IDLE: Frena lentamente fino a fermarsi
           velocity *= 0.9;
         }
 
-        // Aggiorna posizione
         angle += velocity;
         bottleImg.style.transform = `rotate(${angle}deg)`;
 
@@ -423,7 +466,6 @@
 
       // --- UTILS ---
       function handleOrientation(e) {
-        // Ottieni orientamento bussola (iOS vs Android)
         if (e.webkitCompassHeading) {
           deviceHeading = e.webkitCompassHeading;
         } else {
@@ -473,7 +515,6 @@
         return "Locale";
       }
 
-
       function showError(msg) {
         document.getElementById("error-msg").innerText = msg;
         errorBox.style.display = "block";
@@ -482,6 +523,7 @@
         btnSpinner.style.display = "none";
         mainBtn.style.opacity = "1";
         mainBtn.style.pointerEvents = "auto";
+        retryBtn.style.display = "none";
       }
 
       function resetApp() {
