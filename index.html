@@ -537,6 +537,19 @@
         errorBox.style.display = "block";
         resetUI();
       }
+
+
+      // Aggiungi questo in fondo al tuo blocco <script>
+      function sendHeight() {
+          const height = document.documentElement.scrollHeight;
+          window.parent.postMessage({
+              type: 'streamlit:setFrameHeight',
+              height: height
+          }, '*');
+      }
+
+      window.addEventListener('load', sendHeight);
+      window.addEventListener('resize', sendHeight);
     </script>
   </body>
 </html>
