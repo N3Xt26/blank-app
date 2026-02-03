@@ -11,10 +11,13 @@ st.set_page_config(
 # 2. CSS Massiccio per azzerare Streamlit
 st.markdown("""
     <style>
-        /* Nasconde header, footer e menu */
-        header, footer, .stAppDeployButton, #MainMenu {visibility: hidden; display: none;}
+        /* Nasconde tutto: Menu, Footer, Header e i pulsanti di gestione (profilo/coroncina) */
+        header, footer, .stAppDeployButton, #MainMenu, .stActionButton, .stToolbar, #stDecoration {
+            visibility: hidden;
+            display: none !important;
+        }
         
-        /* Rimuove padding e margini del contenitore principale */
+        /* Rimuove ogni spazio bianco intorno al contenuto */
         .main .block-container {
             padding: 0px !important;
             margin: 0px !important;
@@ -22,7 +25,7 @@ st.markdown("""
             height: 100vh !important;
         }
 
-        /* Forza l'iframe a occupare tutto lo spazio senza bordi */
+        /* L'iframe diventa il padrone assoluto dello schermo */
         iframe {
             position: fixed;
             top: 0;
@@ -30,15 +33,13 @@ st.markdown("""
             width: 100vw !important;
             height: 100vh !important;
             border: none;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
             z-index: 999999;
         }
-        
-        /* Nasconde eventuali scrollbar di Streamlit */
+
+        /* Impedisce lo scroll della pagina "contenitore" di Streamlit */
         .stApp {
             overflow: hidden;
+            background-color: transparent;
         }
     </style>
 """, unsafe_allow_html=True)
