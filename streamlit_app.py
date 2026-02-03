@@ -1,10 +1,11 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# 1. Leggi il contenuto del file HTML
+# Configurazione pagina per rimuovere padding eccessivi (opzionale)
+st.set_page_config(layout="wide")
+
+# 1. Leggi il file HTML
 with open("index.html", 'r', encoding='utf-8') as f:
     source_code = f.read()
 
-# 2. Renderizza l'HTML come componente
-# Puoi regolare l'altezza (height) e se mostrare la barra di scorrimento (scrolling)
-components.html(source_code, height=800, scrolling=True)
+components.html(source_code, height=None, scrolling=False)

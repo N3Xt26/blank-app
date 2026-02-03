@@ -102,7 +102,7 @@
         }
 
         #maps-btn {
-            background: #8FBC8F; /* Manteniamo il verde salvia per il tasto "Go" */
+            background: var(--accent-red); /* Manteniamo il verde salvia per il tasto "Go" */
             color: white;
             text-decoration: none;
             padding: 18px 50px;
@@ -249,6 +249,25 @@
             // Avvia il loop di animazione fluida
             requestAnimationFrame(animate);
         }
+
+        // Funzione per inviare l'altezza corrente a Streamlit
+        function sendHeight() {
+            const height = document.documentElement.scrollHeight;
+            window.parent.postMessage({
+                type: 'streamlit:setFrameHeight',
+                height: height
+            }, '*');
+        }
+
+        // Invia l'altezza all'avvio
+        window.addEventListener('load', sendHeight);
+        // Invia l'altezza se la finestra cambia dimensione
+        window.addEventListener('resize', sendHeight);
+
+        // Opzionale: Se hai contenuti dinamici (come la comparsa del tasto Maps), 
+        // chiama sendHeight() dopo che l'elemento appare.
+        const observer = new MutationObserver(sendHeight);
+        observer.observe(document.body, { childList: true, subtree: true });
     </script>
 </body>
 </html>
