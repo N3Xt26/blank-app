@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sage Alcohol Compass</title>
+    <title>Alcol Finder</title>
     <style>
         :root {
             --bg-color: #F9F7F2;
-            --accent-color: #8FBC8F;
+            --accent-red: #E57373;
             --text-color: #546E7A;
             --shadow: 0 10px 30px rgba(0,0,0,0.03);
         }
@@ -24,91 +24,91 @@
             overflow: hidden;
         }
 
-        /* Layout Responsivo Centrale */
-        main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+        header {
+            padding-top: 20px;
             text-align: center;
         }
 
-        header {
-            padding-top: 40px;
-            width: 100%;
+        #app-title {
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0.6;
+            margin-bottom: 10px;
         }
 
         h1 { 
             font-weight: 600; 
-            font-size: clamp(1.2rem, 5vw, 1.6rem); 
-            margin: 0 0 8px 0;
+            font-size: clamp(1.2rem, 6vw, 1.8rem); 
+            margin: 0;
             padding: 0 15px;
         }
 
         #status { 
-            font-size: 0.9rem; 
-            opacity: 0.7; 
-            margin: 0;
-            min-height: 1.2rem;
+            font-size: 0.85rem; 
+            margin-top: 5px;
+            opacity: 0.7;
         }
 
-        /* Bussola Adattiva */
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         #compass-outer {
             position: relative;
-            width: min(80vw, 320px);
-            height: min(80vw, 320px);
+            width: min(75vw, 300px);
+            height: min(75vw, 300px);
             background: white;
             border-radius: 50%;
             box-shadow: var(--shadow);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: auto; /* Centra verticalmente nello spazio flex */
         }
 
         #arrow-svg {
-            width: 60%;
-            height: 60%;
-            fill: var(--accent-color);
-            /* Smoothing per movimenti fluidi */
-            transition: transform 0.25s cubic-bezier(0.215, 0.61, 0.355, 1);
+            width: 65%;
+            height: 65%;
+            fill: var(--accent-red);
+            /* La fluidità è gestita via JS per evitare scatti */
             will-change: transform;
         }
 
-        /* Pulsanti e Feedback */
         footer {
             padding-bottom: env(safe-area-inset-bottom, 30px);
-            width: 100%;
             display: flex;
             justify-content: center;
+            padding-top: 20px;
         }
 
         .btn {
             font-family: inherit;
             font-weight: 600;
+            border: none;
             cursor: pointer;
-            transition: transform 0.2s active;
         }
 
         .btn-ghost {
             background: transparent;
-            border: 1.5px solid var(--accent-color);
-            color: var(--accent-color);
-            padding: 14px 35px;
+            border: 1.5px solid var(--text-color);
+            color: var(--text-color);
+            padding: 12px 30px;
             border-radius: 30px;
             font-size: 0.9rem;
+            opacity: 0.8;
         }
 
         #maps-btn {
-            background: var(--accent-color);
+            background: #8FBC8F; /* Manteniamo il verde salvia per il tasto "Go" */
             color: white;
             text-decoration: none;
             padding: 18px 50px;
             border-radius: 50px;
-            box-shadow: 0 8px 20px rgba(143, 188, 143, 0.25);
-            display: none; /* Appare quando il target è trovato */
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            display: none;
         }
 
         .hidden { display: none !important; }
@@ -117,8 +117,9 @@
 <body>
 
     <header>
-        <h1 id="target-name">In attesa del segnale...</h1>
-        <p id="status">Attiva GPS e Bussola per iniziare</p>
+        <div id="app-title">Alcol Finder</div>
+        <h1 id="target-name">Inizializzazione...</h1>
+        <p id="status">Richiesta posizione GPS</p>
     </header>
 
     <main>
@@ -137,7 +138,11 @@
     <script>
         let userCoords = null;
         let targetBearing = null;
+        
+        // Variabili per smoothing
         let currentRotation = 0;
+        let lerpRotation = 0;
+        const lerpFactor = 0.15; // Più basso è, più è fluido (ma più lento)
 
         const arrow = document.getElementById('arrow-svg');
         const statusText = document.getElementById('status');
@@ -145,7 +150,6 @@
         const startBtn = document.getElementById('start-btn');
         const mapsBtn = document.getElementById('maps-btn');
 
-        // Geolocation on load
         window.onload = () => {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -153,15 +157,14 @@
                         userCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
                         searchAlcohol(userCoords.lat, userCoords.lon);
                     },
-                    () => { statusText.innerText = "Attiva il GPS per localizzare i negozi."; },
+                    () => { statusText.innerText = "GPS non disponibile."; },
                     { enableHighAccuracy: true }
                 );
             }
         };
 
         async function searchAlcohol(lat, lon) {
-            statusText.innerText = "Scansione punti vendita...";
-            // Query mirata: alcolici, bar, pub, supermercati/minimarket
+            statusText.innerText = "Cercando il drink più vicino...";
             const query = `[out:json];(
                 node["shop"~"alcohol|beverages|wine"](around:1500,${lat},${lon});
                 node["amenity"~"bar|pub|biergarten"](around:1500,${lat},${lon});
@@ -179,17 +182,16 @@
                     const tLon = closest.lon || closest.center.lon;
                     
                     targetBearing = calcBearing(lat, lon, tLat, tLon);
-                    targetText.innerText = closest.tags.name || "Vendita Alcolici";
-                    statusText.innerText = `${Math.round(closest.distance)} metri da te`;
+                    targetText.innerText = closest.tags.name || "Punto Vendita";
+                    statusText.innerText = `${Math.round(closest.distance)} metri`;
                     
                     mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${tLat},${tLon}`;
-                    // Il bottone maps appare solo dopo l'attivazione della bussola per pulizia UI
                 } else {
-                    targetText.innerText = "Nessun locale trovato";
-                    statusText.innerText = "Nessuna rivendita di alcolici nel raggio di 1.5km.";
+                    targetText.innerText = "Nessun risultato";
+                    statusText.innerText = "Niente alcolici entro 1.5km.";
                 }
             } catch (err) {
-                statusText.innerText = "Errore di rete. Riprova più tardi.";
+                statusText.innerText = "Errore connessione API.";
             }
         }
 
@@ -197,31 +199,37 @@
             return elements.map(el => {
                 const eLat = el.lat || el.center.lat;
                 const eLon = el.lon || el.center.lon;
-                // Haversine
                 const R = 6371000;
                 const dLat = (eLat - lat) * Math.PI / 180;
                 const dLon = (eLon - lon) * Math.PI / 180;
-                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                          Math.cos(lat * Math.PI / 180) * Math.cos(eLat * Math.PI / 180) *
-                          Math.sin(dLon/2) * Math.sin(dLon/2);
+                const a = Math.sin(dLat/2)**2 + Math.cos(lat*Math.PI/180)*Math.cos(eLat*Math.PI/180)*Math.sin(dLon/2)**2;
                 return { ...el, distance: R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) };
             }).sort((a, b) => a.distance - b.distance)[0];
         }
 
         function calcBearing(lat1, lon1, lat2, lon2) {
-            const y = Math.sin((lon2 - lon1) * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180);
-            const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
-                      Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos((lon2 - lon1) * Math.PI / 180);
-            return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+            const y = Math.sin((lon2-lon1)*Math.PI/180) * Math.cos(lat2*Math.PI/180);
+            const x = Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180) - Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos((lon2-lon1)*Math.PI/180);
+            return (Math.atan2(y, x)*180/Math.PI + 360) % 360;
         }
 
-        // Attivazione sensori e logica bussola
+        // Loop di animazione per fluidità totale
+        function animate() {
+            // Calcolo del percorso più breve
+            let diff = currentRotation - lerpRotation;
+            while (diff < -180) diff += 360;
+            while (diff > 180) diff -= 360;
+            
+            lerpRotation += diff * lerpFactor;
+            arrow.style.transform = `rotate(${lerpRotation}deg)`;
+            
+            requestAnimationFrame(animate);
+        }
+
         startBtn.addEventListener('click', async () => {
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') startTracking();
-                } catch (e) { statusText.innerText = "Permesso negato."; }
+                const permission = await DeviceOrientationEvent.requestPermission();
+                if (permission === 'granted') startTracking();
             } else {
                 startTracking();
             }
@@ -230,21 +238,17 @@
         function startTracking() {
             window.addEventListener('deviceorientation', (e) => {
                 const heading = e.webkitCompassHeading || (360 - e.alpha);
-                if (!heading || targetBearing === null) return;
-
-                const desiredAngle = (targetBearing - heading + 360) % 360;
-                
-                // Calcolo del percorso più breve per evitare giri a 360°
-                let diff = desiredAngle - (currentRotation % 360);
-                if (diff > 180) diff -= 360;
-                if (diff < -180) diff += 360;
-
-                currentRotation += diff;
-                arrow.style.transform = `rotate(${currentRotation}deg)`;
+                if (heading && targetBearing !== null) {
+                    currentRotation = (targetBearing - heading + 360) % 360;
+                }
             }, true);
 
             startBtn.classList.add('hidden');
             if (targetBearing !== null) mapsBtn.style.display = 'block';
+            
+            // Avvia il loop di animazione fluida
+            requestAnimationFrame(animate);
         }
     </script>
 </body>
+</html>
