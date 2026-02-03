@@ -361,7 +361,6 @@
         const lon = userCoords.lon;
         // QUERY MODIFICATA
         const query = `[out:json];(
-            node["shop"~"convenience"](around:2500,${lat},${lon});
             node["amenity"~"bar|pub|biergarten|nightclub|cafe"](around:2500,${lat},${lon});
         );out center;`;
 
@@ -521,8 +520,8 @@
 
         /*if (t.shop === 'wine') return "Enoteca";
         if (t.shop === 'alcohol') return "Liquoreria";
-        if (t.shop === 'supermarket') return "Supermercato";*/
-        if (t.shop === "convenience") return "Minimarket";
+        if (t.shop === 'supermarket') return "Supermercato";
+        if (t.shop === "convenience") return "Minimarket";*/
 
         return "Punto Vendita";
       }
