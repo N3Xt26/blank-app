@@ -7,4 +7,4 @@ with open("index.html", 'r', encoding='utf-8') as f:
 
 # 2. Renderizza l'HTML come componente
 # Puoi regolare l'altezza (height) e se mostrare la barra di scorrimento (scrolling)
-components.html(source_code, height=800, scrolling=True)
+components.html(source_code, height=1080, scrolling=True)
