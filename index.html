@@ -1,246 +1,251 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="it">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-    />
-    <title>Sage Compass Pro</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sage Alcohol Compass</title>
     <style>
-      :root {
-        --bg-color: #f9f7f2;
-        --accent-color: #8fbc8f;
-        --text-color: #546e7a;
-        --shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-      }
+        :root {
+            --bg-color: #F9F7F2;
+            --accent-color: #8FBC8F;
+            --text-color: #546E7A;
+            --shadow: 0 10px 30px rgba(0,0,0,0.03);
+        }
 
-      body {
-        margin: 0;
-        padding: 0;
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--bg-color);
-        font-family: -apple-system, system-ui, sans-serif;
-        color: var(--text-color);
-        overflow: hidden;
-      }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-      #ui-container {
-        text-align: center;
-        z-index: 10;
-        width: 90%;
-      }
-      h1 {
-        font-weight: 600;
-        margin-bottom: 5px;
-        font-size: 1.4rem;
-        color: var(--text-color);
-      }
-      #status {
-        font-size: 0.9rem;
-        margin-bottom: 2rem;
-        min-height: 1.2rem;
-      }
+        body {
+            margin: 0; padding: 0; 
+            height: 100vh; width: 100vw;
+            display: flex; flex-direction: column;
+            background-color: var(--bg-color);
+            font-family: -apple-system, system-ui, sans-serif;
+            color: var(--text-color);
+            overflow: hidden;
+        }
 
-      #compass-rim {
-        width: 260px;
-        height: 260px;
-        border-radius: 50%;
-        background: white;
-        box-shadow: var(--shadow);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 40px auto;
-      }
+        /* Layout Responsivo Centrale */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
 
-      #arrow-svg {
-        width: 140px;
-        height: 140px;
-        fill: var(--accent-color);
-        transition: transform 0.1s linear;
-        transform: rotate(0deg);
-      }
+        header {
+            padding-top: 40px;
+            width: 100%;
+        }
 
-      .btn-ghost {
-        background: transparent;
-        border: 1.5px solid var(--accent-color);
-        color: var(--accent-color);
-        padding: 12px 30px;
-        border-radius: 25px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        cursor: pointer;
-      }
+        h1 { 
+            font-weight: 600; 
+            font-size: clamp(1.2rem, 5vw, 1.6rem); 
+            margin: 0 0 8px 0;
+            padding: 0 15px;
+        }
 
-      #maps-link {
-        position: fixed;
-        bottom: 30px;
-        background: var(--accent-color);
-        color: white;
-        text-decoration: none;
-        padding: 16px 45px;
-        border-radius: 50px;
-        font-weight: 600;
-        box-shadow: 0 4px 12px rgba(143, 188, 143, 0.3);
-        display: none;
-      }
+        #status { 
+            font-size: 0.9rem; 
+            opacity: 0.7; 
+            margin: 0;
+            min-height: 1.2rem;
+        }
+
+        /* Bussola Adattiva */
+        #compass-outer {
+            position: relative;
+            width: min(80vw, 320px);
+            height: min(80vw, 320px);
+            background: white;
+            border-radius: 50%;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: auto; /* Centra verticalmente nello spazio flex */
+        }
+
+        #arrow-svg {
+            width: 60%;
+            height: 60%;
+            fill: var(--accent-color);
+            /* Smoothing per movimenti fluidi */
+            transition: transform 0.25s cubic-bezier(0.215, 0.61, 0.355, 1);
+            will-change: transform;
+        }
+
+        /* Pulsanti e Feedback */
+        footer {
+            padding-bottom: env(safe-area-inset-bottom, 30px);
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn {
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s active;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1.5px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 14px 35px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+        }
+
+        #maps-btn {
+            background: var(--accent-color);
+            color: white;
+            text-decoration: none;
+            padding: 18px 50px;
+            border-radius: 50px;
+            box-shadow: 0 8px 20px rgba(143, 188, 143, 0.25);
+            display: none; /* Appare quando il target è trovato */
+        }
+
+        .hidden { display: none !important; }
     </style>
-  </head>
-  <body>
-    <div id="ui-container">
-      <h1 id="target-name">Ricerca in corso...</h1>
-      <p id="status">Attiva il GPS per iniziare</p>
+</head>
+<body>
 
-      <div id="compass-rim">
-        <svg id="arrow-svg" viewBox="0 0 24 24">
-          <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
-        </svg>
-      </div>
+    <header>
+        <h1 id="target-name">In attesa del segnale...</h1>
+        <p id="status">Attiva GPS e Bussola per iniziare</p>
+    </header>
 
-      <button id="start-btn" class="btn-ghost">AVVIA BUSSOLA</button>
-    </div>
+    <main>
+        <div id="compass-outer">
+            <svg id="arrow-svg" viewBox="0 0 24 24">
+                <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/>
+            </svg>
+        </div>
+    </main>
 
-    <a id="maps-link" target="_blank">APRI IN MAPS</a>
+    <footer>
+        <button id="start-btn" class="btn btn-ghost">ATTIVA BUSSOLA</button>
+        <a id="maps-btn" class="btn" target="_blank">APRI IN GOOGLE MAPS</a>
+    </footer>
 
     <script>
-      let userCoords = null;
-      let targetCoords = null;
-      let targetBearing = 0;
+        let userCoords = null;
+        let targetBearing = null;
+        let currentRotation = 0;
 
-      const startBtn = document.getElementById("start-btn");
-      const statusText = document.getElementById("status");
-      const targetText = document.getElementById("target-name");
-      const arrow = document.getElementById("arrow-svg");
-      const mapsLink = document.getElementById("maps-link");
+        const arrow = document.getElementById('arrow-svg');
+        const statusText = document.getElementById('status');
+        const targetText = document.getElementById('target-name');
+        const startBtn = document.getElementById('start-btn');
+        const mapsBtn = document.getElementById('maps-btn');
 
-      window.onload = () => {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(onSuccess, onError, {
-            enableHighAccuracy: true,
-          });
-        }
-      };
-
-      function onSuccess(position) {
-        userCoords = {
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
-        };
-        fetchNearestAmenity(userCoords.lat, userCoords.lon);
-      }
-
-      function onError() {
-        statusText.innerText = "Errore: GPS non disponibile.";
-      }
-
-      async function fetchNearestAmenity(lat, lon) {
-        statusText.innerText = "Scansione negozi e bar...";
-
-        // Query espansa: supermarket, convenience, grocery, food e bar
-        const query = `[out:json];(
-                node["shop"~"supermarket|convenience|grocery|food"](around:2000,${lat},${lon});
-                node["amenity"="bar"](around:2000,${lat},${lon});
-                way["shop"~"supermarket|convenience|grocery|food"](around:2000,${lat},${lon});
-            );out center;`;
-
-        const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-
-        try {
-          const response = await fetch(url);
-          const data = await response.json();
-
-          if (data.elements.length > 0) {
-            const closest = findClosest(lat, lon, data.elements);
-            // Gestione sia per nodi che per aree (way)
-            targetCoords = {
-              lat: closest.lat || closest.center.lat,
-              lon: closest.lon || closest.center.lon,
-            };
-
-            targetBearing = calculateBearing(
-              lat,
-              lon,
-              targetCoords.lat,
-              targetCoords.lon,
-            );
-
-            targetText.innerText = closest.tags.name || "Negozio senza nome";
-            statusText.innerText = `Distanza: ${Math.round(closest.distance)}m | ${closest.tags.shop || closest.tags.amenity}`;
-
-            mapsLink.href = `https://www.google.com/maps/search/?api=1&query=${targetCoords.lat},${targetCoords.lon}`;
-            mapsLink.style.display = "block";
-          } else {
-            targetText.innerText = "Nessun risultato";
-            statusText.innerText = "Non ci sono negozi nel raggio di 2km.";
-          }
-        } catch (err) {
-          statusText.innerText = "Errore di connessione API.";
-        }
-      }
-
-      function findClosest(lat, lon, elements) {
-        return elements
-          .map((el) => {
-            const eLat = el.lat || el.center.lat;
-            const eLon = el.lon || el.center.lon;
-            const dist = getDistance(lat, lon, eLat, eLon);
-            return { ...el, distance: dist };
-          })
-          .sort((a, b) => a.distance - b.distance)[0];
-      }
-
-      // Formula Haversine accurata per metri
-      function getDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371e3;
-        const φ1 = (lat1 * Math.PI) / 180;
-        const φ2 = (lat2 * Math.PI) / 180;
-        const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-        const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-        const a =
-          Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-          Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      }
-
-      function calculateBearing(lat1, lon1, lat2, lon2) {
-        const φ1 = (lat1 * Math.PI) / 180;
-        const φ2 = (lat2 * Math.PI) / 180;
-        const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-        const y = Math.sin(Δλ) * Math.cos(φ2);
-        const x =
-          Math.cos(φ1) * Math.sin(φ2) -
-          Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-        return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
-      }
-
-      startBtn.addEventListener("click", async () => {
-        if (typeof DeviceOrientationEvent.requestPermission === "function") {
-          const res = await DeviceOrientationEvent.requestPermission();
-          if (res === "granted") initOrientation();
-        } else {
-          initOrientation();
-        }
-      });
-
-      function initOrientation() {
-        window.addEventListener(
-          "deviceorientation",
-          (e) => {
-            let heading = e.webkitCompassHeading || 360 - e.alpha;
-            if (heading) {
-              const rotation = (targetBearing - heading + 360) % 360;
-              arrow.style.transform = `rotate(${rotation}deg)`;
+        // Geolocation on load
+        window.onload = () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        userCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                        searchAlcohol(userCoords.lat, userCoords.lon);
+                    },
+                    () => { statusText.innerText = "Attiva il GPS per localizzare i negozi."; },
+                    { enableHighAccuracy: true }
+                );
             }
-          },
-          true,
-        );
-        startBtn.style.display = "none";
-      }
+        };
+
+        async function searchAlcohol(lat, lon) {
+            statusText.innerText = "Scansione punti vendita...";
+            // Query mirata: alcolici, bar, pub, supermercati/minimarket
+            const query = `[out:json];(
+                node["shop"~"alcohol|beverages|wine"](around:1500,${lat},${lon});
+                node["amenity"~"bar|pub|biergarten"](around:1500,${lat},${lon});
+                node["shop"~"supermarket|convenience"](around:1500,${lat},${lon});
+                way["shop"~"supermarket|convenience"](around:1500,${lat},${lon});
+            );out center;`;
+            
+            try {
+                const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (data.elements && data.elements.length > 0) {
+                    const closest = getClosest(lat, lon, data.elements);
+                    const tLat = closest.lat || closest.center.lat;
+                    const tLon = closest.lon || closest.center.lon;
+                    
+                    targetBearing = calcBearing(lat, lon, tLat, tLon);
+                    targetText.innerText = closest.tags.name || "Vendita Alcolici";
+                    statusText.innerText = `${Math.round(closest.distance)} metri da te`;
+                    
+                    mapsBtn.href = `https://www.google.com/maps/search/?api=1&query=${tLat},${tLon}`;
+                    // Il bottone maps appare solo dopo l'attivazione della bussola per pulizia UI
+                } else {
+                    targetText.innerText = "Nessun locale trovato";
+                    statusText.innerText = "Nessuna rivendita di alcolici nel raggio di 1.5km.";
+                }
+            } catch (err) {
+                statusText.innerText = "Errore di rete. Riprova più tardi.";
+            }
+        }
+
+        function getClosest(lat, lon, elements) {
+            return elements.map(el => {
+                const eLat = el.lat || el.center.lat;
+                const eLon = el.lon || el.center.lon;
+                // Haversine
+                const R = 6371000;
+                const dLat = (eLat - lat) * Math.PI / 180;
+                const dLon = (eLon - lon) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                          Math.cos(lat * Math.PI / 180) * Math.cos(eLat * Math.PI / 180) *
+                          Math.sin(dLon/2) * Math.sin(dLon/2);
+                return { ...el, distance: R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) };
+            }).sort((a, b) => a.distance - b.distance)[0];
+        }
+
+        function calcBearing(lat1, lon1, lat2, lon2) {
+            const y = Math.sin((lon2 - lon1) * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180);
+            const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+                      Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos((lon2 - lon1) * Math.PI / 180);
+            return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+        }
+
+        // Attivazione sensori e logica bussola
+        startBtn.addEventListener('click', async () => {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') startTracking();
+                } catch (e) { statusText.innerText = "Permesso negato."; }
+            } else {
+                startTracking();
+            }
+        });
+
+        function startTracking() {
+            window.addEventListener('deviceorientation', (e) => {
+                const heading = e.webkitCompassHeading || (360 - e.alpha);
+                if (!heading || targetBearing === null) return;
+
+                const desiredAngle = (targetBearing - heading + 360) % 360;
+                
+                // Calcolo del percorso più breve per evitare giri a 360°
+                let diff = desiredAngle - (currentRotation % 360);
+                if (diff > 180) diff -= 360;
+                if (diff < -180) diff += 360;
+
+                currentRotation += diff;
+                arrow.style.transform = `rotate(${currentRotation}deg)`;
+            }, true);
+
+            startBtn.classList.add('hidden');
+            if (targetBearing !== null) mapsBtn.style.display = 'block';
+        }
     </script>
-  </body>
+</body>
 </html>
