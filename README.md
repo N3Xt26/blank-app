@@ -1,19 +1,10 @@
-# 🎈 Blank app template
+import streamlit as st
+import streamlit.components.v1 as components
 
-A simple Streamlit app template for you to modify!
+# 1. Leggi il contenuto del file HTML
+with open("index.html", 'r', encoding='utf-8') as f:
+    source_code = f.read()
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blank-app-template.streamlit.app/)
-
-### How to run it on your own machine
-
-1. Install the requirements
-
-   ```
-   $ pip install -r requirements.txt
-   ```
-
-2. Run the app
-
-   ```
-   $ streamlit run streamlit_app.py
-   ```
+# 2. Renderizza l'HTML come componente
+# Puoi regolare l'altezza (height) e se mostrare la barra di scorrimento (scrolling)
+components.html(source_code, height=800, scrolling=True)
