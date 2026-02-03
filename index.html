@@ -359,7 +359,11 @@
       async function trySearch() {
         const lat = userCoords.lat;
         const lon = userCoords.lon;
-        const query = `[out:json];(node["shop"~"alcohol|beverages|wine"](around:2500,${lat},${lon});node["amenity"~"bar|pub|biergarten"](around:2500,${lat},${lon});node["shop"~"supermarket|convenience"](around:2500,${lat},${lon}););out center;`;
+        // QUERY MODIFICATA
+        const query = `[out:json];(
+            node["shop"~"convenience"](around:2500,${lat},${lon});
+            node["amenity"~"bar|pub|biergarten|nightclub|cafe"](around:2500,${lat},${lon});
+        );out center;`;
 
         try {
           const response = await fetch(
@@ -370,7 +374,6 @@
 
           if (data.elements && data.elements.length > 0) {
             const closest = getClosest(lat, lon, data.elements);
-            // Passiamo il controllo alla funzione asincrona per il setup
             await setupTarget(closest);
           } else {
             throw new Error("Nessun risultato");
@@ -388,30 +391,28 @@
         }
       }
 
-      // NUOVA FUNZIONE PER DISTANZA STRADALE
+      // DISTANZA STRADALE (OSRM)
       async function getWalkingDistance(fromLat, fromLon, toLat, toLon) {
         try {
-          // Usa OSRM public API (gratuita)
           const url = `https://router.project-osrm.org/route/v1/walking/${fromLon},${fromLat};${toLon},${toLat}?overview=false`;
           const response = await fetch(url);
           const data = await response.json();
           if (data.routes && data.routes.length > 0) {
-            return data.routes[0].distance; // Ritorna metri
+            return data.routes[0].distance;
           }
         } catch (e) {
           console.warn("Errore routing OSRM:", e);
         }
-        return null; // Fallback se fallisce
+        return null;
       }
 
-      // FUNZIONE SETUP MODIFICATA (ASYNC)
+      // SETUP ASINCRONO
       async function setupTarget(place) {
         const tLat = place.lat || place.center.lat;
         const tLon = place.lon || place.center.lon;
 
         targetBearing = calcBearing(userCoords.lat, userCoords.lon, tLat, tLon);
 
-        // Calcolo distanza reale
         statusText.innerText = "Calcolo percorso a piedi...";
         let realDistance = await getWalkingDistance(
           userCoords.lat,
@@ -420,7 +421,6 @@
           tLon,
         );
 
-        // Se OSRM fallisce, usa la distanza in linea d'aria (place.distance)
         if (!realDistance) realDistance = place.distance;
 
         appState = "TRACKING";
@@ -508,11 +508,23 @@
         return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
       }
 
+      // LISTA CATEGORIE PULITA
       function getCategoryName(el) {
-        if (el.tags.shop === "supermarket") return "Supermercato";
-        if (el.tags.amenity === "bar") return "Bar";
-        if (el.tags.amenity === "pub") return "Pub";
-        return "Locale";
+        const t = el.tags;
+
+        // LOCALI
+        if (t.amenity === "nightclub") return "Discoteca";
+        if (t.amenity === "bar") return "Bar";
+        if (t.amenity === "pub") return "Pub";
+        if (t.amenity === "biergarten") return "Birreria";
+        if (t.amenity === "cafe") return "Caffetteria";
+
+        /*if (t.shop === 'wine') return "Enoteca";
+        if (t.shop === 'alcohol') return "Liquoreria";
+        if (t.shop === 'supermarket') return "Supermercato";*/
+        if (t.shop === "convenience") return "Minimarket";
+
+        return "Punto Vendita";
       }
 
       function showError(msg) {
