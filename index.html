@@ -534,11 +534,14 @@
         .addEventListener("click", () => setMode("RANDOM"));
       mainBtn.addEventListener("click", startFlow);
       calibManualBtn.addEventListener("click", completeCalibrationSuccess);
-
+      
       shareBtn.addEventListener("click", () => {
         if (!targetPlaceData) return;
         const name = targetPlaceData.tags.name || "Locale misterioso";
-        const mapUrl = `http://googleusercontent.com/maps.google.com/?q=${targetPlaceData.lat},${targetPlaceData.lon}`;
+        
+        // LINK GOOGLE MAPS CORRETTO PER LA CONDIVISIONE
+        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${targetPlaceData.lat},${targetPlaceData.lon}`;
+        
         const msg = `La bottiglia ha parlato! Andiamo qui: ${name} 🍻 ${mapUrl}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
       });
@@ -745,7 +748,9 @@
       function applyRouteToUI(place, data) {
         routePath = data.route;
         const name = place.tags.name || "Locale misterioso";
-        const mapsLink = `http://googleusercontent.com/maps.google.com/?q=${place.lat},${place.lon}&mode=w`;
+
+        // NUOVO LINK CORRETTO (Indicazioni a piedi verso la destinazione usando le API di Maps):
+        const mapsLink = `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lon}&travelmode=walking`;
 
         targetText.innerHTML = `<a href="${mapsLink}" target="_blank" class="result-link">${name} <i data-lucide="external-link" width="14"></i></a>`;
         statusText.innerHTML = `Distanza: <b>${data.dist}m</b> (${data.time} min).<br>Segui la bottiglia!`;
